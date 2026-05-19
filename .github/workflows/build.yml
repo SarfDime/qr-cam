@@ -3,7 +3,10 @@ name: Build QR Camera APK
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:   # lets you trigger manually from GitHub UI
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -19,9 +22,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # Generate a debug keystore on-the-fly (fine for personal sideloading)
-      # To use your own keystore: add it as a base64 GitHub Secret (see README)
-      - name: Generate debug keystore
+      - name: Generate keystore
         run: |
           keytool -genkeypair \
             -keystore debug.keystore \
@@ -38,15 +39,25 @@ jobs:
 
       - name: Build release APK
         env:
-          KEYSTORE_PATH: ../debug.keystore   # relative to app/ module
+          KEYSTORE_PATH: ../debug.keystore
           KEYSTORE_PASSWORD: android
           KEY_ALIAS: androiddebugkey
           KEY_PASSWORD: android
         run: ./gradlew assembleRelease --no-daemon
 
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+      - name: Get short commit SHA
+        id: vars
+        run: echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: QRCamera-release
-          path: app/build/outputs/apk/release/app-release.apk
-          retention-days: 30
+          tag_name: v1.0-${{ steps.vars.outputs.sha }}
+          name: "QR Camera ${{ steps.vars.outputs.sha }}"
+          body: |
+            Automated build from commit `${{ steps.vars.outputs.sha }}`.
+
+            **Install:** download the APK below, enable *Install unknown apps*, tap to install.
+            **Setup:** double-press power → pick *QR Camera* → *Always*.
+          files: app/build/outputs/apk/release/app-release.apk
+          make_latest: true
