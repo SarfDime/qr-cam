@@ -1,0 +1,42 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    compileSdk 34
+    namespace 'com.qrcam.app'
+
+    defaultConfig {
+        applicationId "com.qrcam.app"
+        minSdk 23
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // Signing handled by GitHub Actions via keystore env vars
+            signingConfig signingConfigs.release
+        }
+    }
+
+    signingConfigs {
+        release {
+            storeFile     file(System.getenv("KEYSTORE_PATH") ?: "debug.keystore")
+            storePassword System.getenv("KEYSTORE_PASSWORD") ?: "android"
+            keyAlias      System.getenv("KEY_ALIAS")         ?: "androiddebugkey"
+            keyPassword   System.getenv("KEY_PASSWORD")      ?: "android"
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    // No dependencies needed — pure minimal app
+}
